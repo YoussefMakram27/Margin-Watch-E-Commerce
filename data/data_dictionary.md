@@ -19,9 +19,9 @@ Tables: `Orders`, `Customers`, `Products`
 | `Category` | Text | Product category at time of order (denormalized copy from Products). | Inconsistent casing, stray whitespace, and typos present (e.g. `Electroncis`, `Home and Kitchen`, `ELECTRONICS`). Standardize against `Products.Category` before analysis. |
 | `Sub-Category` | Text | Product sub-category (denormalized copy from Products). | — |
 | `Quantity` | Number | Units ordered on this line. | Can be **negative** (used to represent returns on some rows — not consistently applied, see Order Status). A few extreme outlier values exist (fat-finger entry, e.g. qty in the hundreds) — investigate before treating as real. |
-| `Unit Price` | Number (some stored as Text) | Price per unit at time of sale. | ~1.5% of values stored as text with a `$` prefix (e.g. `"$45.20"`) instead of numeric. ~1.5% missing. |
+| `Unit Price` | Number (some stored as Text) | what you charge the customer per item before discounts. It’s the selling price. | ~1.5% of values stored as text with a `$` prefix (e.g. `"$45.20"`) instead of numeric. ~1.5% missing. |
 | `Discount` | Decimal (0-1) | Discount applied to this line, as a fraction (e.g. `0.15` = 15% off). | ~2% missing — treat missing as 0 or investigate case-by-case. |
-| `Cost Price` | Number | Unit cost of the product (denormalized copy from Products). | Use with `Unit Price` and `Quantity` to calculate profit. |
+| `Cost Price` | Number | what you (the seller) pay to acquire or make the product. It’s your cost. (denormalized copy from Products). | Use with `Unit Price` and `Quantity` to calculate profit. |
 | `Payment Method` | Text | How the order was paid for. Values: `Credit Card`, `PayPal`, `Debit Card`, `Cash on Delivery`, `Gift Card`. | — |
 | `Ship Mode` | Text | Shipping speed selected. Values: `Standard`, `Express`, `Same Day`, `Economy`. | — |
 | `Order Status` | Text | Current status of the order. Values: `Delivered`, `Cancelled`, `Returned`, `Pending`, `Processing`. | Inconsistent casing and leading whitespace present (e.g. `" returned"`, `PENDING`). Standardize before grouping/filtering. |
