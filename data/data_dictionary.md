@@ -16,11 +16,11 @@ Tables: `Orders`, `Customers`, `Products`
 | `Ship Date` | Text (should be Date) | Date the order shipped. | Same multi-format issue as `Order Date`. Missing (`null`) for cancelled orders and some pending/processing orders. |
 | `Customer ID` | Text | Foreign key to `Customers.Customer ID`. | ~2% missing values. |
 | `Product ID` | Text | Foreign key to `Products.Product ID`. | — |
-| `Category` | Text | Product category at time of order (denormalized copy from Products). | Inconsistent casing, stray whitespace, and typos present (e.g. `Electroncis`, `Home and Kitchen`, `ELECTRONICS`). Standardize against `Products.Category` before analysis. |
+| `Category` | Text | Product category at time of order (denormalized copy from Products). | Inconsistent casing, stray whitespace, and typos present (e.g. `Electroncis`, `Home and Kitchen`, `ELECTRONICS`). Should standardize against `Products.Category` before analysis. |
 | `Sub-Category` | Text | Product sub-category (denormalized copy from Products). | — |
-| `Quantity` | Number | Units ordered on this line. | Can be **negative** (used to represent returns on some rows — not consistently applied, see Order Status). A few extreme outlier values exist (fat-finger entry, e.g. qty in the hundreds) — investigate before treating as real. |
+| `Quantity` | Number | Units ordered on this line. | Can be **negative** (used to represent returns on some rows — not consistently applied). A few extreme outlier values exist (fat-finger entry, e.g. qty in the hundreds) — investigation needed before treating as real. |
 | `Unit Price` | Number (some stored as Text) | what you charge the customer per item before discounts. It’s the selling price. | ~1.5% of values stored as text with a `$` prefix (e.g. `"$45.20"`) instead of numeric. ~1.5% missing. |
-| `Discount` | Decimal (0-1) | Discount applied to this line, as a fraction (e.g. `0.15` = 15% off). | ~2% missing — treat missing as 0 or investigate case-by-case. |
+| `Discount` | Decimal (0-1) | Discount applied to this line, as a fraction (e.g. `0.15` = 15% off). | ~2% missing — treat missing as 0. |
 | `Cost Price` | Number | what you (the seller) pay to acquire or make the product. It’s your cost. (denormalized copy from Products). | Use with `Unit Price` and `Quantity` to calculate profit. |
 | `Payment Method` | Text | How the order was paid for. Values: `Credit Card`, `PayPal`, `Debit Card`, `Cash on Delivery`, `Gift Card`. | — |
 | `Ship Mode` | Text | Shipping speed selected. Values: `Standard`, `Express`, `Same Day`, `Economy`. | — |
@@ -34,7 +34,7 @@ Tables: `Orders`, `Customers`, `Products`
 
 | Column | Type | Description | Notes / Known Issues |
 |---|---|---|---|
-| `Customer ID` | Text | Unique identifier. Format: `C-XXXXX`. | 15 IDs appear **twice**, with the name in different casing on the duplicate row (simulates a duplicate CRM entry). Decide how to de-duplicate. |
+| `Customer ID` | Text | Unique identifier. Format: `C-XXXXX`. | 15 IDs appear **twice**, with the name in different casing on the duplicate row (simulates a duplicate CRM entry). |
 | `Customer Name` | Text | Full name. | — |
 | `Email` | Text | Customer email address. | ~4% missing. |
 | `Signup Date` | Date | Date the customer registered. | Stored consistently as a proper date (no format issue on this table). |
@@ -71,16 +71,3 @@ Products.Product ID    ──< Orders.Product ID
 - `Orders.Category`, `Orders.Sub-Category`, and `Orders.Cost Price` are denormalized (copied) from `Products` at the time of the order — they exist in `Orders` for convenience but should be validated against `Products` rather than trusted blindly, since that's where the messiness was introduced.
 
 ---
-
-## Summary of Data Quality Issues (for your cleaning log)
-
-| # | Issue | Table.Column | Suggested Fix |
-|---|---|---|---|
-| 1 | Multiple date formats | `Orders.Order Date`, `Orders.Ship Date` | Parse all formats, convert to a single consistent date type |
-| 2 | Inconsistent casing / typos | `Orders.Category`, `Orders.Order Status` | Trim whitespace, standardize casing, map typos to canonical values (cross-check against `Products.Category`) |
-| 3 | Numbers stored as text | `Orders.Unit Price` | Strip `$`, convert to numeric |
-| 4 | Missing values | `Orders.Customer ID`, `Orders.Unit Price`, `Orders.Discount`, `Orders.Ship Date`, `Orders.Shipping Cost`, `Customers.Email` | Decide per-column: impute, flag as unknown, or exclude from relevant KPI |
-| 5 | Duplicate rows | `Orders` (~1.5% of rows) | De-duplicate on `Order Line ID` |
-| 6 | Duplicate customer records | `Customers.Customer ID` (15 IDs) | De-duplicate, keep one canonical name per ID |
-| 7 | Outlier values | `Orders.Quantity` | Investigate extreme values, cap or exclude if confirmed data entry errors |
-| 8 | Inconsistent returns convention | `Orders.Quantity` vs `Orders.Order Status` | Standardize how returns are represented (negative qty vs. status flag alone) |
